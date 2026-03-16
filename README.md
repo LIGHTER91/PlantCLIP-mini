@@ -1,243 +1,225 @@
-
 # PlantCLIP-mini
 
-Implémentation simplifiée d'un modèle **vision–langage de type CLIP** appliqué à la **détection de maladies des plantes** à partir d'images de feuilles et de descriptions textuelles.
+A simplified implementation of a **CLIP-style vision--language model**
+applied to **plant disease detection** using leaf images and textual
+descriptions.
 
-Le projet apprend un **espace d'embedding multimodal partagé** entre images et texte afin de permettre :
-- la correspondance image ↔ texte
-- la recherche d’images à partir d’une requête en langage naturel
-- l’exploration sémantique d’images agricoles
+The project learns a **shared multimodal embedding space** between
+images and text, enabling:
 
----
+-   image ↔ text matching
+-   image retrieval using natural language queries
+-   semantic exploration of agricultural images
 
-# Aperçu
+------------------------------------------------------------------------
 
-Les modèles vision–langage modernes (CLIP, BLIP, etc.) apprennent à aligner des images et du texte dans un espace vectoriel commun.
+# Overview
 
-Dans ce projet :
+Modern vision--language models (such as CLIP or BLIP) learn to align
+images and text within a shared vector space.
 
-- **Encodeur image** : ResNet18
-- **Encodeur texte** : DistilBERT
-- **Dimension des embeddings** : 256
-- **Apprentissage** : contrastif (CLIP loss)
+In this project:
 
-Le modèle est entraîné sur le dataset **PlantVillage** avec des descriptions textuelles générées automatiquement à partir des labels.
+-   **Image encoder**: ResNet18
+-   **Text encoder**: DistilBERT
+-   **Embedding dimension**: 256
+-   **Training objective**: contrastive learning (CLIP loss)
 
----
+The model is trained on the **PlantVillage dataset**, where textual
+descriptions are automatically generated from class labels.
+
+------------------------------------------------------------------------
 
 # Dataset
 
-Dataset utilisé : **PlantVillage**
+Dataset used: **PlantVillage**
 
-Caractéristiques :
+Characteristics:
 
-- ~54 000 images de feuilles
-- 38 classes (plante + maladie)
-- 14 espèces de plantes
-- images RGB
+-   \~54,000 leaf images
+-   38 classes (plant + disease)
+-   14 plant species
+-   RGB images
 
-Exemples de classes :
+Example classes:
 
-```
-Tomato___Early_blight
-Apple___healthy
-Grape___Black_rot
-```
+    Tomato___Early_blight
+    Apple___healthy
+    Grape___Black_rot
 
-Les labels sont transformés en descriptions textuelles afin d'entraîner le modèle vision-langage.
+Labels are converted into textual descriptions to train the
+vision--language model.
 
-Exemple de caption générée :
+Example generated caption:
 
-```
-a close-up photo of a tomato leaf showing early blight symptoms
-```
+    a close-up photo of a tomato leaf showing early blight symptoms
 
----
+------------------------------------------------------------------------
 
-# Architecture du modèle
+# Model Architecture
 
-## Encodeur image
+## Image Encoder
 
-Backbone :
+Backbone:
 
-```
-ResNet18
-```
+    ResNet18
 
-Projection linéaire vers un embedding de 256 dimensions.
+Followed by a linear projection into a **256-dimensional embedding
+space**.
 
-## Encodeur texte
+## Text Encoder
 
-Backbone :
+Backbone:
 
-```
-DistilBERT
-```
+    DistilBERT
 
-Pooling moyen des tokens puis projection vers 256 dimensions.
+Mean pooling is applied to the token embeddings, followed by a
+projection into the **256-dimensional embedding space**.
 
-Les deux embeddings sont normalisés avant l'entraînement.
+Both embeddings are **L2-normalized** before training.
 
----
+------------------------------------------------------------------------
 
-# Apprentissage contrastif
+# Contrastive Training
 
-Le modèle est entraîné avec une **loss contrastive de type CLIP**.
+The model is trained using a **CLIP-style contrastive loss**.
 
-Objectif :
+Objective:
 
-- rapprocher les embeddings image–texte correspondants
-- éloigner les autres combinaisons dans le batch
+-   bring matching **image--text embeddings closer**
+-   push **non-matching pairs apart**
 
-Formule simplifiée :
+Simplified loss formulation:
 
-L = CE(image→texte) + CE(texte→image)
+    L = CE(image→text) + CE(text→image)
 
-Chaque batch agit également comme ensemble de **négatifs implicites**.
+Each batch also acts as a set of **implicit negatives**.
 
----
+------------------------------------------------------------------------
 
-# Configuration d'entraînement
+# Training Configuration
 
-Paramètres principaux :
+Main parameters:
 
-```
-Batch size : 32
-Learning rate : 1e-4
-Optimizer : AdamW
-Scheduler : CosineAnnealingLR
-Epochs : 10
-Embedding dimension : 256
-```
+    Batch size : 32
+    Learning rate : 1e-4
+    Optimizer : AdamW
+    Scheduler : CosineAnnealingLR
+    Epochs : 10
+    Embedding dimension : 256
 
-Le scheduler **CosineAnnealingLR** diminue progressivement le learning rate pour stabiliser la convergence.
+The **CosineAnnealingLR scheduler** progressively reduces the learning
+rate to stabilize convergence.
 
----
+------------------------------------------------------------------------
 
-# Résultats d'entraînement
+# Training Results
 
-Résultats observés pendant l'entraînement :
+Observed training results:
 
-| Epoch | Train Loss | Val Loss | Image→Texte Acc | Texte→Image Acc |
-|------|-----------|----------|----------------|----------------|
-| 1 | 0.8455 | 0.7555 | 0.5748 | 0.5796 |
-| 2 | 0.7422 | 0.7343 | 0.5823 | 0.5825 |
-| 3 | 0.7279 | 0.7271 | 0.5795 | 0.5821 |
-| 4 | 0.7204 | 0.7265 | 0.5819 | 0.5846 |
-| 5 | 0.7184 | 0.7189 | 0.5778 | 0.5848 |
-| 6 | 0.7154 | 0.7173 | 0.5823 | 0.5816 |
-| 7 | 0.7055 | 0.7197 | 0.5807 | 0.5800 |
+  Epoch   Train Loss   Val Loss   Image→Text Acc   Text→Image Acc
+  ------- ------------ ---------- ---------------- ----------------
+  1       0.8455       0.7555     0.5748           0.5796
+  2       0.7422       0.7343     0.5823           0.5825
+  3       0.7279       0.7271     0.5795           0.5821
+  4       0.7204       0.7265     0.5819           0.5846
+  5       0.7184       0.7189     0.5778           0.5848
+  6       0.7154       0.7173     0.5823           0.5816
+  7       0.7055       0.7197     0.5807           0.5800
 
-Meilleure validation observée :
+Best validation performance:
 
-```
-Validation loss ≈ 0.717
-Image → Texte accuracy ≈ 0.58
-Texte → Image accuracy ≈ 0.58
-```
+    Validation loss ≈ 0.717
+    Image → Text accuracy ≈ 0.58
+    Text → Image accuracy ≈ 0.58
 
----
+------------------------------------------------------------------------
 
-# Structure du projet
+# Project Structure
 
-```
-plantclip-mini
-│
-├── data/
-│   └── images/
-│
-├── create_metadata.py
-├── dataset.py
-├── model.py
-├── train_clip.py
-├── build_index.py
-├── inference.py
-│
-├── metadata.csv
-├── image_embeddings.pt
-├── image_index.csv
-│
-├── requirements.txt
-└── README.md
-```
+    plantclip-mini
+    │
+    ├── data/
+    │   └── images/
+    │
+    ├── create_metadata.py
+    ├── dataset.py
+    ├── model.py
+    ├── train_clip.py
+    ├── build_index.py
+    ├── inference.py
+    │
+    ├── metadata.csv
+    ├── image_embeddings.pt
+    ├── image_index.csv
+    │
+    ├── requirements.txt
+    └── README.md
 
----
+------------------------------------------------------------------------
 
-# Pipeline d'utilisation
+# Usage Pipeline
 
-## 1. Générer les descriptions
+## 1. Generate captions
 
-```
-python create_metadata.py
-```
+    python create_metadata.py
 
-Cela crée le fichier :
+This creates the file:
 
-```
-metadata.csv
-```
+    metadata.csv
 
----
+------------------------------------------------------------------------
 
-## 2. Entraîner le modèle
+## 2. Train the model
 
-```
-python train_clip.py
-```
+    python train_clip.py
 
-Le meilleur modèle est sauvegardé dans :
+The best model is saved as:
 
-```
-plantclip_model.pt
-```
+    plantclip_model.pt
 
----
+------------------------------------------------------------------------
 
-## 3. Construire l'index d'embeddings image
+## 3. Build the image embedding index
 
-```
-python build_index.py
-```
+    python build_index.py
 
-Cela génère :
+This generates:
 
-```
-image_embeddings.pt
-image_index.csv
-```
+    image_embeddings.pt
+    image_index.csv
 
----
+------------------------------------------------------------------------
 
-## 4. Rechercher des images avec une requête texte
+## 4. Search images using a text query
 
-Exemple :
+Example:
 
-```
-python inference.py --query "tomato leaf with early blight"
-```
+    python inference.py --query "tomato leaf with early blight"
 
-Le système retourne les images les plus proches dans l’espace d'embedding.
+The system returns the closest images in the embedding space.
 
----
+------------------------------------------------------------------------
 
 # Limitations
 
-- captions générées automatiquement
-- dataset limité en diversité textuelle
-- encodeur image relativement simple
-- évaluation retrieval encore basique
+-   captions are automatically generated
+-   limited textual diversity in the dataset
+-   relatively simple image encoder
+-   basic retrieval evaluation
 
----
+------------------------------------------------------------------------
 
-# Références
+# References
 
-- Radford et al. – Learning Transferable Visual Models From Natural Language Supervision (CLIP)
-- PlantVillage dataset
-- PyTorch
-- HuggingFace Transformers
+-   Radford et al. --- Learning Transferable Visual Models From Natural
+    Language Supervision (CLIP)
+-   PlantVillage Dataset
+-   PyTorch
+-   HuggingFace Transformers
 
----
+------------------------------------------------------------------------
 
-# Licence
+# License
 
 MIT License
